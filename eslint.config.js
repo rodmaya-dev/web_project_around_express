@@ -16,7 +16,11 @@ export default [
     },
     rules: {
       'no-underscore-dangle': ['error', { allow: ['_id'] }],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off', // o ["warn", { allow: ["warn", "error", "log"] }]
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ], // ESLint no distingue entre "de verdad se te olvidó" y "lo necesito por la firma de la función pero no lo uso"
     },
   },
 ];
