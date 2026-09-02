@@ -1,31 +1,25 @@
-import type { RequestHandler } from "express";
-import { readJsonFile } from "../utils/readJsonFile.js";
-import { NotFoundError } from "../errors/NotFoundError.js";
-import type { IUser } from "../types/index.js";
+import type { Request, Response } from "express";
+import User from "../models/user.js";
 
-const USERS_FILE = "users.json";
-
-export const getUsers: RequestHandler = async (_req, res, next) => {
-  try {
-    const users = await readJsonFile<IUser[]>(USERS_FILE);
-    res.json(users);
-  } catch (error) {
-    next(error);
-  }
+export const getUsers = async (_req: Request, res: Response) => {
+  const users = await User.find({});
+  res.send(users);
 };
 
-export const getUserById: RequestHandler = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    const users = await readJsonFile<IUser[]>(USERS_FILE);
-    const user = users.find((candidate) => candidate._id === userId);
+export const getUserById = async (req: Request, res: Response) => {
+  const user = await User.findById(req.params.id);
 
-    if (!user) {
-      throw new NotFoundError("User ID not found");
-    }
-
-    res.json(user);
-  } catch (error) {
-    next(error);
+  if (!user) {
+    throw Object.assign(new Error("No se encontró ningún usuario con ese id"), {
+      statusCode: 404,
+    });
   }
+
+  res.send(user);
+};
+
+export const createUser = async (req: Request, res: Response) => {
+  const { name, about, avatar } = req.body;
+  const user = await User.create({ name, about, avatar });
+  res.status(201).send(user);
 };
