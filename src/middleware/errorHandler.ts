@@ -1,15 +1,21 @@
-//Express usa para un middleware de errores y no una ruta normal
-import type { ErrorRequestHandler } from "express";
-import { NotFoundError } from "../errors/NotFoundError.js";
+import type { Request, Response, NextFunction } from "express";
 
-const DEFAULT_ERROR_MESSAGE = "An error has ocurred on the server";
+export const errorHandler = (
+  err: Error & { statusCode?: number },
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): void => {
+  console.error(err);
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
-  if (err instanceof NotFoundError) {
-    res.status(err.statusCode).json({ message: err.message });
-    return;
+  let { statusCode = 500 } = err;
+
+  if (err.name === "ValidationError" || err.name === "CastError") {
+    statusCode = 400;
   }
 
-  console.error(err);
-  res.status(500).json({ message: DEFAULT_ERROR_MESSAGE });
+  const message =
+    statusCode === 500 ? "Ha ocurrido un error en el servidor" : err.message;
+
+  res.status(statusCode).send({ message });
 };
