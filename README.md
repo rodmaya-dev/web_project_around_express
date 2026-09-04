@@ -152,7 +152,7 @@ The `users` and `cards` collections, created automatically on first document ins
 ### Error handling
 
 **Unknown route → 404**
-`GET /banana`
+`GET /apple`
 
 ![404 unknown route](./screenshots/error-404-route.png)
 
