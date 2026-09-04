@@ -1,59 +1,50 @@
-# Around the U.S. — Express API
+# Around the U.S. — Express + MongoDB REST API
 
-## Descripción
+A REST API built with **Express.js**, **TypeScript**, and **MongoDB (via Mongoose)** for the "Around the U.S." project. It manages two resources — **users** and **cards** — with schema validation, centralized error handling, and a like/dislike system for cards.
 
-API REST para el proyecto "Alrededor de los EE. UU.", construida con Node.js y Express como parte del bootcamp de Desarrollo Web Full Stack de TripleTen (Sprint 13). Esta es la primera iteración del backend: sirve datos de usuarios y tarjetas desde archivos JSON locales, y más adelante se conectará a una base de datos real y al frontend en React construido en sprints anteriores.
+This project is part of the TripleTen Full Stack Web Development bootcamp (Sprint 14). It replaces the previous version's static JSON file storage with a real MongoDB database.
 
-## Funcionalidades
+## Features
 
-- `GET /users` — devuelve la lista completa de usuarios en formato JSON.
-- `GET /users/:userId` — devuelve un usuario específico por su ID, o un `404` con `{ "message": "User ID not found" }` si no existe ningún usuario con ese ID.
-- `GET /cards` — devuelve la lista completa de tarjetas en formato JSON.
-- Cualquier ruta no definida devuelve un `404` con `{ "message": "Requested resource not found" }`.
-- Middleware centralizado de manejo de errores: devuelve `500` con `{ "message": "An error has ocurred on the server" }` ante errores inesperados.
+- Full CRUD for users and cards, backed by MongoDB.
+- Schema-level validation (required fields, length limits, custom URL regex validation for `avatar` and `link`).
+- Like / dislike system for cards using MongoDB's `$addToSet` and `$pull` operators, with a computed `isLiked` field on every card response.
+- Temporary authorization middleware that attaches a fixed user `_id` to every request (a stand-in for authentication, which will be implemented in a later sprint).
+- Centralized, type-safe error-handling middleware that maps Mongoose `ValidationError` / `CastError` to `400`, missing resources to `404`, and unexpected failures to `500`.
+- Strict TypeScript configuration (ES Modules, `exactOptionalPropertyTypes`) and ESLint + Prettier for consistent code style.
 
-## Tecnologías y técnicas utilizadas
+## Technologies & Techniques
 
-- **Node.js** — entorno de ejecución de JavaScript del lado del servidor.
-- **Express.js** — enrutamiento, middleware y manejo de solicitudes/respuestas.
-- **TypeScript** — tipado estático, compilado con `tsc`.
-- **ES Modules** (`import`/`export`) en todo el proyecto.
-- **node:fs/promises** — lectura asíncrona y no bloqueante de los archivos de datos JSON.
-- **node:path** + `import.meta.dirname` — construcción segura de rutas absolutas, independiente del sistema operativo.
-- **ESLint** + **typescript-eslint** + **Prettier** — calidad y formato consistente del código.
-- **tsx** — ejecución de TypeScript con hot reload para desarrollo local.
-- Arquitectura modular: rutas, controladores, middlewares, errores, tipos y utilidades separados en sus propias carpetas.
+- **Node.js** + **Express 5** — server and routing
+- **TypeScript** — static typing across routes, controllers, and models, including a custom `Express.Request` type augmentation for `req.user`
+- **MongoDB** — document database
+- **Mongoose** — schema definition, validation, and data access (`find`, `findById`, `create`, `findByIdAndUpdate`, `findByIdAndDelete`)
+- **tsx** — hot-reload development server
+- **ESLint** (`@eslint/js`, `typescript-eslint`) + **Prettier** — linting and formatting
+- **Postman** — manual API testing during development
+- Custom regular expression for URL validation (avatar/image links)
 
-## Estructura del proyecto
+## Project Structure
 
 ```
 web_project_around_express/
-├── data/
-│   ├── cards.json
-│   └── users.json
-├── screenshots/
-│   ├── prueba1.png
-│   ├── prueba2.png
-│   ├── prueba3.png
-│   ├── prueba4.png
-│   └── prueba5.png
 ├── src/
 │   ├── controllers/
 │   │   ├── cards.ts
 │   │   └── users.ts
-│   ├── errors/
-│   │   └── NotFoundError.ts
-│   ├── middlewares/
-│   │   ├── errorHandler.ts
-│   │   └── notFoundHandler.ts
+│   ├── middleware/
+│   │   └── errorHandler.ts
+│   ├── models/
+│   │   ├── card.ts
+│   │   ├── user.ts
+│   │   └── urlValidator.ts
 │   ├── routes/
 │   │   ├── cards.ts
 │   │   ├── index.ts
 │   │   └── users.ts
 │   ├── types/
-│   │   └── index.ts
-│   ├── utils/
-│   │   └── readJsonFile.ts
+│   │   └── express/
+│   │       └── index.d.ts
 │   └── app.ts
 ├── .editorconfig
 ├── .gitignore
@@ -62,36 +53,120 @@ web_project_around_express/
 └── tsconfig.json
 ```
 
-## Cómo ejecutar el proyecto
+## API Reference
+
+### Users
+
+| Method | Route              | Description                                  |
+| ------ | ------------------ | -------------------------------------------- |
+| GET    | `/users`           | Get all users                                |
+| GET    | `/users/me`        | Get the current user's profile               |
+| GET    | `/users/:id`       | Get a user by ID                             |
+| POST   | `/users`           | Create a user (`name`, `about`, `avatar`)    |
+| PATCH  | `/users/me`        | Update the current user's `name` and `about` |
+| PATCH  | `/users/me/avatar` | Update the current user's `avatar`           |
+
+### Cards
+
+| Method | Route              | Description                                                          |
+| ------ | ------------------ | -------------------------------------------------------------------- |
+| GET    | `/cards`           | Get all cards (includes computed `isLiked`)                          |
+| POST   | `/cards`           | Create a card (`name`, `link`); owner is taken from the current user |
+| DELETE | `/cards/:id`       | Delete a card by ID                                                  |
+| PUT    | `/cards/:id/likes` | Like a card                                                          |
+| DELETE | `/cards/:id/likes` | Remove a like from a card                                            |
+
+### Error Responses
+
+| Status | When it happens                                     |
+| ------ | --------------------------------------------------- |
+| 400    | Invalid data on create/update, or a malformed `_id` |
+| 404    | The requested user, card, or route does not exist   |
+| 500    | Unexpected server error                             |
+
+All error responses are shaped as `{ "message": string }`.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js
+- A local MongoDB server running (`mongod`)
+
+### Installation
 
 ```bash
-npm install        # instalar dependencias
-npm run dev         # iniciar el servidor de desarrollo con hot reload en http://localhost:3000
-npm run build        # compilar TypeScript desde src/ hacia dist/
-npm start             # ejecutar el servidor compilado desde dist/
-npm run lint           # ejecutar ESLint
+npm install
 ```
 
-## Pruebas de la API
+### Running the project
 
-Las siguientes solicitudes fueron probadas manualmente con Postman:
+Development (hot reload with `tsx`):
 
-**GET /users** — devuelve la lista completa de usuarios.
+```bash
+npm run dev
+```
 
-![Respuesta de GET /users](screenshots/prueba1.png)
+Production build:
 
-**GET /cards** — devuelve la lista completa de tarjetas.
+```bash
+npm run build
+npm run start
+```
 
-![Respuesta de GET /cards](screenshots/prueba2.png)
+The server runs on `http://localhost:3000` and connects to MongoDB at `mongodb://localhost:27017/aroundb`.
 
-**GET /users/:userId** (ID existente) — devuelve un usuario específico.
+### Linting
 
-![GET /users/:userId - usuario existente](screenshots/prueba3.png)
+```bash
+npm run lint
+```
 
-**GET /users/:userId** (ID inexistente) — devuelve 404 con el mensaje de error esperado.
+## Screenshots / Demo
 
-![GET /users/:userId - usuario no encontrado](screenshots/prueba4.png)
+### Creating a user (Postman)
 
-**GET a una ruta no definida** — devuelve 404 con el mensaje genérico de recurso no encontrado.
+`POST /users` with `name`, `about`, and `avatar` in the request body.
 
-![GET a una ruta inexistente](screenshots/prueba5.png)
+![Create user request](./screenshots/create-user.png)
+
+### Creating a card (Postman)
+
+`POST /cards` — the `owner` is resolved server-side from `req.user`, and the response includes the computed `isLiked` field.
+
+![Create card request](./screenshots/create-card.png)
+
+### MongoDB Compass — `aroundb` database
+
+The `users` and `cards` collections, created automatically on first document insert.
+
+![MongoDB Compass view of aroundb](./screenshots/compass-aroundb.png)
+
+### Liking / disliking a card
+
+`PUT /cards/:id/likes` and `DELETE /cards/:id/likes`, showing `isLiked` toggle between `true` and `false`.
+
+![Like card request](./screenshots/like-card.png)
+![Dislike card request](./screenshots/dislike-card.png)
+
+### Error handling
+
+**Unknown route → 404**
+`GET /banana`
+
+![404 unknown route](./screenshots/error-404-route.png)
+
+**Malformed ID → 400 (Mongoose CastError)**
+`GET /users/123`
+
+![400 cast error](./screenshots/error-400-cast.png)
+
+**Well-formed but non-existent ID → 404**
+`GET /users/:id` with a valid but unassigned ObjectId.
+
+![404 user not found](./screenshots/error-404-not-found.png)
+
+## Author
+
+**Rodrigo Maya**
+[LinkedIn](https://linkedin.com/in/rod-maya) · [GitHub](https://github.com/rodmaya-dev) · [Portfolio](https://rodmaya-dev.github.io)

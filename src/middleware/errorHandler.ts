@@ -8,7 +8,7 @@ export const errorHandler = (
 ): void => {
   console.error(err);
 
-  let { statusCode = 500 } = err;
+  let { statusCode = 500 } = err; // 500 valor por default en caso de que statusCode sea undefined
 
   if (err.name === "ValidationError" || err.name === "CastError") {
     statusCode = 400;
